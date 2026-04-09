@@ -1,28 +1,21 @@
 <?php
+
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Str;
 
 class Invitation extends Model
 {
-    use HasUuids;
+    use HasUuids, SoftDeletes;
 
     protected $fillable = [
-        'user_id',
-        'template_id',
-        'title',
-        'slug',
-        'status',
-        'event_date',
-        'event_time',
-        'event_location',
-        'event_address',
-        'latitude',
-        'longitude',
-        'expired_at',
+        'user_id', 'template_id', 'title', 'slug',
+        'status', 'event_date', 'event_time',
+        'event_location', 'event_address',
+        'latitude', 'longitude', 'expired_at',
     ];
 
     protected $casts = [
@@ -30,49 +23,79 @@ class Invitation extends Model
         'expired_at' => 'datetime',
     ];
 
-    public function user(): BelongsTo
+    // ── Boot: auto slug ──────────────────────────────
+    protected static function boot()
+    {
+        parent::boot();
+        static::creating(function ($model) {
+            if (empty($model->slug)) {
+                $model->slug = Str::slug($model->title) . '-' . Str::random(6);
+            }
+        });
+    }
+
+    // ── Relationships ────────────────────────────────
+    public function user()
     {
         return $this->belongsTo(User::class);
     }
 
-    public function template(): BelongsTo
+    public function template()
     {
         return $this->belongsTo(Template::class);
     }
 
-    public function sections(): HasMany
+    public function sections()
     {
-        return $this->hasMany(InvitationSection::class)->orderBy('order');
+        return $this->hasMany(InvitationSection::class, 'invitation_id')
+                    ->orderBy('order');
     }
 
-    public function galleries(): HasMany
+    public function galleries()
     {
-        return $this->hasMany(Gallery::class)->orderBy('order');
+        return $this->hasMany(Gallery::class, 'invitation_id')
+                    ->orderBy('order');
     }
 
-    public function guestBooks(): HasMany
+    public function guestBooks()
     {
-        return $this->hasMany(GuestBook::class)->latest();
+        return $this->hasMany(GuestBook::class, 'invitation_id')
+                    ->where('is_approved', true)
+                    ->latest();
     }
 
-    public function rsvps(): HasMany
+    public function rsvps()
     {
-        return $this->hasMany(Rsvp::class)->latest();
+        return $this->hasMany(Rsvp::class, 'invitation_id')
+                    ->latest();
     }
 
-    public function views(): HasMany
+    public function views()
     {
-        return $this->hasMany(InvitationView::class);
+        return $this->hasMany(InvitationView::class, 'invitation_id');
     }
 
-    // Accessors
-    public function getUrlAttribute(): string
+    // ── Helpers ──────────────────────────────────────
+
+    /** Get a specific section by type (only visible) */
+    public function getSection(string $type): ?InvitationSection
     {
-        return route('invitation.show', $this->slug);
+        return $this->sections
+            ->where('section_type', $type)
+            ->where('is_visible', true)
+            ->first();
     }
 
-    public function getTotalViewsAttribute(): int
+    /** Check if invitation is expired */
+    public function isExpired(): bool
     {
-        return $this->views()->count();
+        return $this->expired_at && now()->gt($this->expired_at);
+    }
+
+    /** Public URL */
+    public function publicUrl(string $guestName = ''): string
+    {
+        $url = route('invitation.show', $this->slug);
+        return $guestName ? $url . '?to=' . urlencode($guestName) : $url;
     }
 }

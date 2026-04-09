@@ -10,9 +10,20 @@ return Application::configure(basePath: dirname(__DIR__))
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
     )
-    ->withMiddleware(function (Middleware $middleware): void {
-        //
+    ->withMiddleware(function (Middleware $middleware) {
+
+        $middleware->alias([
+            // ✅ Custom middlewares (always works)
+            'admin' => \App\Http\Middleware\AdminMiddleware::class,
+            'user'  => \App\Http\Middleware\UserMiddleware::class,
+
+            // ✅ Spatie middlewares
+            'role'               => \Spatie\LaravelPermission\Middleware\RoleMiddleware::class,
+            'permission'         => \Spatie\LaravelPermission\Middleware\PermissionMiddleware::class,
+            'role_or_permission' => \Spatie\LaravelPermission\Middleware\RoleOrPermissionMiddleware::class,
+        ]);
+
     })
-    ->withExceptions(function (Exceptions $exceptions): void {
+    ->withExceptions(function (Exceptions $exceptions) {
         //
     })->create();

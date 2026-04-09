@@ -22,4 +22,13 @@ class Rsvp extends Model
     {
         return $this->belongsTo(Invitation::class);
     }
+    public function getAttendanceLabelAttribute(): string
+    {
+        return match($this->attendance) {
+            'yes'   => '✅ Attending',
+            'no'    => '❌ Not Attending',
+            'maybe' => '🤔 Maybe',
+            default => '-',
+        };
+    }
 }
