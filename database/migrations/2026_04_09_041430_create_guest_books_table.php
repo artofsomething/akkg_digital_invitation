@@ -12,8 +12,18 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('guest_books', function (Blueprint $table) {
-            $table->id();
+            $table->uuid('id')->primary();
+            $table->uuid('invitation_id');
+            $table->string('guest_name');
+            $table->string('guest_message',500);
+            $table->boolean('is_approved')->default(true);
+            $table->softDeletes();
             $table->timestamps();
+
+            $table->foreign('invitation_id')
+                    ->references('id')
+                    ->on('invitations')
+                    ->cascadeOnDelete();
         });
     }
 

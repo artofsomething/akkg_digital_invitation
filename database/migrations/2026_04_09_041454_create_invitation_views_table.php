@@ -12,8 +12,18 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('invitation_views', function (Blueprint $table) {
-            $table->id();
+            $table->uuid('id')->primary();
+            $table->uuid('invitation_id');
+            $table->string('ip_address')->nullable();
+            $table->string('user_agent')->nullable();
+            $table->string('referrer')->nullable();
+            $table->softDeletes();
             $table->timestamps();
+
+            $table->foreign('invitation_id')
+                    ->references('id')
+                    ->on('invitations')
+                    ->cascadeOnDelete();
         });
     }
 

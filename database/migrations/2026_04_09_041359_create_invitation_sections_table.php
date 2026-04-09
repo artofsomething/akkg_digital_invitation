@@ -12,8 +12,19 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('invitation_sections', function (Blueprint $table) {
-            $table->id();
+            $table->uuid('id')->primary();
+            $table->uuid('invitation_id');
+            $table->enum('section_type',['opening','profile','the_date','gallery','map','guest_book','rsvp']);
+            $table->json('content');
+            $table->boolean('is_visible')->default(true);
+            $table->integer('order')->default(0);
+            $table->softDeletes();
             $table->timestamps();
+
+            $table->foreign('invitation_id')
+                    ->references('id')
+                    ->on('invitations')
+                    ->cascadeOnDelete();
         });
     }
 

@@ -12,8 +12,24 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('templates', function (Blueprint $table) {
-            $table->id();
+            $table->uuid('id')->primary();
+            $table->uuid('category_id');
+            $table->string('name');
+            $table->string('slug')->unique();
+            $table->string('thumbnail');
+            $table->string('preview_url')->nullable();
+            $table->json('color_scheme')->nullable();
+            $table->string('font_family')->nullable();
+            $table->boolean('is_active')->default(true);
+            $table->boolean('is_premium')->default(false);
+            $table->integer('used_count')->default(0);
+            $table->softDeletes();
             $table->timestamps();
+
+            $table->foreign('category_id')
+                        ->reference('id')
+                        ->on('categories')
+                        ->cascadeOnDelete();
         });
     }
 
